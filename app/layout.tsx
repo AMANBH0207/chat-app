@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import "bootstrap/dist/css/bootstrap.min.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from "./Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +29,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        />
+      </head>
+      <body className="min-h-full flex flex-col dark-theme">
+        <Providers>{children}</Providers></body>
     </html>
   );
 }
