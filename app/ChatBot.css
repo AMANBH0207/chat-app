@@ -1,5 +1,12 @@
 /********** RESIZABLE SIDEBAR ************/
-/* Background */
+.logo-lg{
+  margin-right:15px;
+  border-radius: 50%;
+  overflow: hidden;
+  min-width: 45px;
+  min-height: 45px;
+}
+
 .auth-bg {
   height: 100vh;
   background: linear-gradient(135deg, #000000, #0c252f, #000000);

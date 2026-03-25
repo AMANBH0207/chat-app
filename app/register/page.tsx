@@ -2,6 +2,9 @@
 import "../ChatBot.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppDispatch } from "../store/hooks";
+import { registerUser } from "../store/Auth/authThunks";
+import { toast } from "react-toastify";
 type FormType = {
   name: string;
   email: string;
@@ -15,13 +18,19 @@ export default function RegisterPage() {
     password: "",
   });
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Register Data:", form);
-    // router.push("/login");
+    try {
+    const res = await dispatch(registerUser(form)).unwrap();
+    toast.success(res?.message||"Registration successful");
+    router.push("/login")
+  }catch (err: unknown) {
+  toast.error((err as string) || "Registration failed");
+}
   };
 
   return (

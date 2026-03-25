@@ -1,21 +1,32 @@
 "use client";
 
-import "../ChatBot.css"
+import "../ChatBot.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { loginUser } from "../store/Auth/authThunks";
+import { UserLoginData } from "../store/Auth/authTypes";
+import { useAppDispatch } from "../store/hooks";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const dispatch = useAppDispatch();
+  const [form, setForm] = useState<UserLoginData>({ email: "", password: "" });
   const router = useRouter();
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    localStorage.setItem("token", "dummy");
-    router.push("/chat");
+
+    try {
+      const res = await dispatch(loginUser(form)).unwrap();
+      toast.success(res?.message || "Login successful");
+      router.push("/");
+    } catch (err: unknown) {
+      toast.error((err as string) || "Login failed");
+    }
   };
 
   return (
@@ -46,9 +57,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <button className="btn auth-btn w-100 text-white">
-            Login
-          </button>
+          <button className="btn auth-btn w-100 text-white">Login</button>
         </form>
 
         <p className="mt-3 text-center">

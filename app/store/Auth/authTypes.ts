@@ -4,6 +4,11 @@ export interface User {
   email: string;
 }
 
+export interface UserLoginData {
+  email: string;
+  password: string;
+}
+
 export interface AuthState {
   user: User | null;
   loading: boolean;

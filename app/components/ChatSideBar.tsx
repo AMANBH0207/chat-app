@@ -1,9 +1,11 @@
-'use client'
+"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import moment from "moment";
 import NavigationBar from "./NavigationBar";
-
+import Image from "next/image";
+import { useAppDispatch } from "../store/hooks";
+import { searchUsers } from "../store/User/userThunks";
 interface SelectedChatType {
   id: string | null;
   name: string | null;
@@ -28,8 +30,9 @@ function ChatSideBar({
 }: ChatSideBarProps) {
   const [users, setUsers] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const dispatch = useAppDispatch();
 
   let emptyIcon = "fa-comment-slash";
   let emptyText = "No Conversation Has Happened Yet";
@@ -38,6 +41,26 @@ function ChatSideBar({
     emptyIcon = "fa-envelope-open-text";
     emptyText = "No Unread Messages";
   }
+
+  const getUsers = async () => {
+    try {
+      const res = await dispatch(searchUsers(searchTerm)).unwrap();
+      setUsers(res);
+    } catch (err: unknown) {
+      console.error("Error fetching users:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (searchTerm) {
+      const timer = setTimeout(() => {
+        getUsers();
+      }, 1000);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [searchTerm]);
 
   return (
     <div
@@ -54,7 +77,12 @@ function ChatSideBar({
         style={{ padding: "25px 10px" }}
       >
         <span className="logo-lg">
-
+          <Image
+            src="/assets/images/avatars/Avatar.png"
+            alt="Avatar"
+            width={45}
+            height={45}
+          />
         </span>
 
         <div className="d-flex align-items-center">
@@ -77,7 +105,7 @@ function ChatSideBar({
             <input
               type="text"
               className="search-input"
-              placeholder="Search"
+              placeholder="Search User"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -180,13 +208,18 @@ function ChatSideBar({
                   }
                 >
                   <div className="d-flex align-items-center">
+                    <Image
+                      src={item?.avatarUrl}
+                      alt="avatar"
+                      className="chat-avatar"
+                      width={40}
+                      height={40}
+                    />
 
                     <div className="chat-info flex-grow-1">
                       <div className="d-flex align-items-start">
                         <div>
-                          <p className="chat-name mb-0">
-                            {item?.user?.username}
-                          </p>
+                          <p className="chat-name mb-0">{item?.name}</p>
                           <p
                             className={`chat-last-message mb-0 ${
                               item?.lastMessage?.isReadByAdmin ? "" : "fw-bold"
@@ -196,13 +229,15 @@ function ChatSideBar({
                               (item.lastMessage.fileType.startsWith("image")
                                 ? "Image"
                                 : item.lastMessage.fileType.startsWith("video")
-                                ? "Video"
-                                : item.lastMessage.fileType.startsWith("audio")
-                                ? "Audio"
-                                : item.lastMessage.fileType ===
-                                  "application/pdf"
-                                ? "Pdf"
-                                : "")}
+                                  ? "Video"
+                                  : item.lastMessage.fileType.startsWith(
+                                        "audio",
+                                      )
+                                    ? "Audio"
+                                    : item.lastMessage.fileType ===
+                                        "application/pdf"
+                                      ? "Pdf"
+                                      : "")}
 
                             {item?.lastMessage?.fileType &&
                               item?.lastMessage?.text?.trim() &&
@@ -223,7 +258,7 @@ function ChatSideBar({
                               <span>
                                 {item?.lastMessage?.createdAt
                                   ? moment(item?.lastMessage?.createdAt).format(
-                                      "hh:mm A"
+                                      "hh:mm A",
                                     )
                                   : "--"}
                               </span>

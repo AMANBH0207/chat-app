@@ -3,6 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./Providers";
+import { ToastContainer } from "react-toastify";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +37,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col dark-theme">
-        <Providers>{children}</Providers></body>
+        <Providers>{children}
+          <ToastContainer />
+          </Providers></body>
     </html>
   );
 }
