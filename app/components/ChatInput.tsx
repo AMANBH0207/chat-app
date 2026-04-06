@@ -1,14 +1,12 @@
-import React, { use, useEffect, useRef } from "react";
-import { useSendChatBotMessageMutation } from "../../../services/apis/chatService";
-import { useAppSelector } from "../../../app/hooks";
-import { globalSelectors } from "../../../services/global";
-import { useNavigate } from "react-router-dom";
-import localforage from "localforage";
+import React, { useRef } from "react";
 import AttachmentPopup from "./AttachmentPopup";
+import { useAppDispatch } from "../store/hooks";
+import { sendUserMessage } from "../store/Messages/messagesThunks";
 
 interface SelectedChatType {
   id: string | null;
   name: string | null;
+  room_id: string | null;
 }
 
 interface ChatInputProps {
@@ -40,54 +38,13 @@ function ChatInput({ selectedChat }: ChatInputProps) {
     const s = String(sec % 60).padStart(2, "0");
     return `${m}:${s}`;
   };
+  const dispatch = useAppDispatch();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     console.log("Selected file:", file);
-    // 👉 upload / preview / send message here
-  };
-
-  const sendMessage = () => {
-    const file = fileInputRef.current?.files?.[0] || null;
-    if (!message.trim() && !file && !audioURL) return;
-    if (audioURL) {
-      fetch(audioURL)
-        .then((res) => res.blob())
-        .then((audioBlob) => {
-          triggerChat({
-            receiverId: selectedChat.id,
-            text: message || " ",
-            file: audioBlob,
-          });
-        });
-
-      // Reset audio
-      setAudioURL(null);
-      audioChunksRef.current = [];
-      return;
-    }
-
-    if (file) {
-      triggerChat({
-        text: message || " ",
-        receiverId: selectedChat.id,
-        file: file,
-      });
-
-      setFilePreview({ type: null, url: null, name: null });
-      if (fileInputRef.current) fileInputRef.current.value = "";
-
-      setMessage("");
-      return;
-    }
-    triggerChat({
-      text: message,
-      receiverId: selectedChat.id,
-    });
-
-    setMessage("");
   };
 
   React.useEffect(() => {
@@ -98,19 +55,13 @@ function ChatInput({ selectedChat }: ChatInputProps) {
     }
   }, [message]);
 
-  const [triggerChat, { data: SendData, error, isError }] =
-    useSendChatBotMessageMutation();
-  const authToken = localforage.getItem<string>("token");
-  const navigate = useNavigate();
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = await authToken;
-      if (!token) {
-        navigate("/login");
-      }
-    };
-    checkAuth();
-  }, [SendData, navigate]);
+  const sendMessage =()=>{
+    const payload = {
+      roomId: selectedChat.room_id,
+      text: message
+    }
+    dispatch(sendUserMessage(payload))
+  }
 
   const handleAttachmentClick = () => {
     fileInputRef.current?.click();
@@ -203,16 +154,12 @@ function ChatInput({ selectedChat }: ChatInputProps) {
     ) {
       mediaRecorderRef.current.stop();
     }
-
-    // 🔴 FIX: Stop microphone access completely
     if (mediaRecorderRef.current?.stream) {
       mediaRecorderRef.current.stream.getTracks().forEach((track) => {
         track.stop();
       });
     }
-
     setIsRecording(false);
-
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -224,7 +171,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
         return;
       } else {
         e.preventDefault();
-        sendMessage();
+      
       }
     }
   };
@@ -232,7 +179,6 @@ function ChatInput({ selectedChat }: ChatInputProps) {
   return (
     <>
       <div className="chat-input border-top py-3 px-2 headersColor">
-        {/* 🔴 RECORDING WAVEFORM */}
         {isRecording && (
           <div
             className="d-flex align-items-center mb-2 p-2 rounded"
@@ -254,7 +200,6 @@ function ChatInput({ selectedChat }: ChatInputProps) {
           </div>
         )}
 
-        {/* 🟢 AUDIO PREVIEW AFTER RECORDING */}
         {audioURL && !isRecording && (
           <div
             className="mb-2 p-2 rounded d-flex align-items-center justify-content-between"
@@ -263,10 +208,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
               border: "1px solid #e3e3e3",
             }}
           >
-            {/* AUDIO PLAYER */}
             <audio controls src={audioURL} style={{ width: "85%" }} />
-
-            {/* DELETE AUDIO BUTTON */}
             <button
               className="btn btn-sm btn-light border-0"
               style={{
@@ -280,7 +222,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
               }}
               onClick={() => {
                 setAudioURL(null);
-                audioChunksRef.current = []; // clear blob chunks
+                audioChunksRef.current = [];
               }}
             >
               <i className="fa-solid fa-xmark"></i>
@@ -337,7 +279,6 @@ function ChatInput({ selectedChat }: ChatInputProps) {
           </div>
         )}
         <div className="d-flex align-items-end">
-          {/* Attachment */}
           <button
             className="btn rounded-pill me-2 btn-custom-dark"
             onClick={() => setShowAttachment(true)}
@@ -345,7 +286,6 @@ function ChatInput({ selectedChat }: ChatInputProps) {
             <i className="fa-solid fa-plus"></i>
           </button>
 
-          {/* Hidden file input */}
           <input
             type="file"
             accept="image/*,video/*,.pdf,.zip,application/zip,application/x-zip-compressed"
@@ -354,9 +294,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
             onChange={handleFileChange}
           />
 
-          {/* MAIN HOLDER */}
           <div className="flex-grow-1">
-            {/* TEXTAREA */}
             <div
               className={`d-flex align-items-center px-3 chatBot-Input ${
                 isOverflow ? "rounded" : "rounded-pill"
@@ -387,12 +325,10 @@ function ChatInput({ selectedChat }: ChatInputProps) {
             </div>
           </div>
 
-          {/* BUTTON LOGIC */}
           {!isRecording &&
           !audioURL &&
           message.trim() === "" &&
           !filePreview.type ? (
-            // SHOW MIC ONLY IF: no recording, no audio saved, no text, no file
             <button
               className="btn rounded-pill ms-2 btn-custom-dark"
               onClick={startRecording}
@@ -400,7 +336,6 @@ function ChatInput({ selectedChat }: ChatInputProps) {
               <i className="fa-solid fa-microphone"></i>
             </button>
           ) : isRecording ? (
-            // SHOW STOP DURING RECORDING
             <button
               className="btn btn-danger rounded-pill ms-2 no-focus-btn"
               onClick={stopRecording}
@@ -408,7 +343,6 @@ function ChatInput({ selectedChat }: ChatInputProps) {
               <i className="fa-solid fa-stop"></i>
             </button>
           ) : (
-            // OTHERWISE ALWAYS SHOW SEND BUTTON
             <button
               className="btn btn-custom-dark rounded-pill ms-2 "
               onClick={sendMessage}

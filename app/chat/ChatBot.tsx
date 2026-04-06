@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import ComingSoon from "../components/ComingSoon";
 import ChatSideBar from "../components/ChatSideBar";
 import NoChatSelected from "../components/NoChatSelected";
+import ChatArea from "../components/ChatArea";
 
 function ChatBot() {
   const [selectedChat, setSelectedChat] = useState<{
     name: string | null;
     id: string | null;
+    room_id: string | null;
   }>({
     name: null,
     id: null,
+    room_id: null,
   });
 
   const [selectedMenu, setSelectedMenu] = useState<string>("chats");
@@ -75,11 +78,11 @@ function ChatBot() {
             !selectedChat?.id ? (
               <NoChatSelected />
             ) : (
-              <div></div>
-              // <ChatArea
-              //   selectedChat={selectedChat}
-              //   setSelectedChat={setSelectedChat}
-              // />
+              // <div></div>
+              <ChatArea
+                selectedChat={selectedChat}
+                setSelectedChat={setSelectedChat}
+              />
             )
           ) : (
             <ComingSoon

@@ -6,9 +6,12 @@ import NavigationBar from "./NavigationBar";
 import Image from "next/image";
 import { useAppDispatch } from "../store/hooks";
 import { searchUsers } from "../store/User/userThunks";
+import { getMyRooms, joinRoom } from "../store/Rooms/roomsThunks";
+import { User } from "../store/User/userTypes";
 interface SelectedChatType {
   id: string | null;
   name: string | null;
+  room_id: string | null;
 }
 
 interface ChatSideBarProps {
@@ -61,6 +64,39 @@ function ChatSideBar({
       };
     }
   }, [searchTerm]);
+
+  const handleUserClick = async (user: User) => {
+    console.log("User clicked:", user);
+    try {
+      const res = await dispatch(joinRoom(user._id)).unwrap();
+      setSelectedChat({
+        name: user?.name,
+        id: user?._id,
+        room_id: user.room_id,
+      });
+      // // join socket
+      // socket.emit("join_room", res._id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+  useEffect(() => {
+    dispatch(getMyRooms())
+      .unwrap()
+      .then((res) => {
+        setUsers(res);
+        const totalUnread = res.reduce(
+          (acc: number, room: any) => acc + (room.unreadCount || 0),
+          0,
+        );
+        setUnreadCount(totalUnread);
+      })
+      .catch((err) => {
+        console.error("Error fetching rooms:", err);
+      });
+  }, []);
 
   return (
     <div
@@ -200,12 +236,9 @@ function ChatSideBar({
                   className={`list-group-item clickable chat-item ${
                     item?._id === selectedChat.id ? "active" : ""
                   }`}
-                  onClick={() =>
-                    setSelectedChat({
-                      name: item?.user?.username,
-                      id: item?._id,
-                    })
-                  }
+                  onClick={() => {
+                    handleUserClick(item);
+                  }}
                 >
                   <div className="d-flex align-items-center">
                     <Image

@@ -1,18 +1,14 @@
 import React, { useEffect, useState, useMemo } from "react";
-import {
-  useGetChatBotMessageQuery,
-  useMarkReadMessageQuery,
-} from "../../../services/apis/chatService";
 import ChatInput from "./ChatInput";
-import socketService from "../../../services/socket/socketService";
-import { useParams } from "react-router-dom";
-import Config from "../../../config";
 import moment from "moment";
 import FilePreview from "./FilePreview";
+import { fetchMessages } from "../store/Messages/messagesThunks";
+import { useAppDispatch } from "../store/hooks";
 
 interface SelectedChatType {
   id: string | null;
   name: string | null;
+  room_id: string | null;
 }
 
 interface ChatAreaProps {
@@ -27,30 +23,12 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<any[] | undefined>([]);
   const [fromApi, setFromApi] = useState(true);
-  const userId = useParams();
   const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
   const [activeMatch, setActiveMatch] = useState(0);
   const messageRefs = React.useRef<(HTMLDivElement | null)[]>([]);
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
+  const dispatch = useAppDispatch();
 
-  const {
-    data: lastMessage,
-    refetch: refetchMessages,
-  } = useGetChatBotMessageQuery(
-    { page: 1, limit: 10, receiverId: selectedChat?.id },
-    {
-      skip: !selectedChat?.id,
-    }
-  );
-
-  const { data: isreadby, refetch } = useMarkReadMessageQuery(
-    { userMessageId: selectedChat?.id },
-    {
-      skip: !selectedChat?.id,
-    }
-  );
-
-  // FIX: Use useMemo to calculate dates instead of useEffect + setState
   const dates = useMemo(() => {
     const displayMsgs = fromApi
       ? [...(messages || [])].reverse()
@@ -58,7 +36,6 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
     return displayMsgs.map((msg) => msg?.createdAt.split("T")[0]);
   }, [messages, fromApi]);
 
-  // Calculate displayMessages using useMemo to prevent recalculation
   const displayMessages = useMemo(() => {
     return fromApi ? [...(messages || [])].reverse() : messages || [];
   }, [messages, fromApi]);
@@ -69,43 +46,14 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
         searchInputRef.current?.focus();
       });
     } else {
-      setMessageSearch("");
-      setMatchIndexes([]);
-      setActiveMatch(0);
     }
   }, [showSearch]);
 
   useEffect(() => {
-    if (!selectedChat?.id) return;
-    refetchMessages();
-  }, [selectedChat?.id]);
-
-  useEffect(() => {
-    setMessages(lastMessage?.data || []);
-    setFromApi(true);
-  }, [lastMessage]);
-
-  useEffect(() => {
-    socketService.connect(Config.SOCKET_BASE_URL);
-    return () => socketService.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!userId?.id) return;
-    const listenChats = (socketData: any) => {
-      if (socketData?.lastMessages[0]?.userId === selectedChat?.id) {
-        setMessages(socketData.lastMessages || []);
-        refetch();
-        setFromApi(false);
-      }
-    };
-    socketService.emit("join", userId?.id);
-
-    socketService.on("lastMessages", listenChats);
-    return () => {
-      socketService.off("lastMessages", listenChats);
-    };
-  }, [userId?.id, selectedChat?.id]);
+    if (selectedChat?.room_id) {
+      dispatch(fetchMessages(selectedChat.room_id));
+    }
+  }, [selectedChat]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -130,27 +78,6 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
     a.remove();
     window.URL.revokeObjectURL(blobUrl);
   };
-
-  useEffect(() => {
-    if (!messageSearch.trim()) {
-      setMatchIndexes([]);
-      setActiveMatch(0);
-      return;
-    }
-
-    const q = messageSearch.toLowerCase();
-
-    const indexes = displayMessages.reduce<number[]>((acc, m, i) => {
-      if (m.text?.toLowerCase().includes(q)) acc.push(i);
-      return acc;
-    }, []);
-
-    setMatchIndexes(indexes);
-
-    setActiveMatch((prev) =>
-      indexes.length ? Math.min(prev, indexes.length - 1) : 0
-    );
-  }, [messageSearch, displayMessages]);
 
   useEffect(() => {
     if (!matchIndexes.length) return;
@@ -184,7 +111,9 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
           <div className="d-md-none me-2">
             <span
               className="p-2"
-              onClick={() => setSelectedChat({ name: null, id: null })}
+              onClick={() =>
+                setSelectedChat({ name: null, id: null, room_id: null })
+              }
             >
               <svg
                 width="10"
@@ -202,13 +131,6 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
           </div>
 
           {/* Avatar */}
-          <img
-            src={`${
-              import.meta.env.VITE_BASE_URL
-            }assets/images/icons/useravatar.png`}
-            alt="avatar"
-            className="chat-avatar"
-          />
 
           {/* Chat Name */}
           <h5 className="fw-bold mb-0 ms-2">{selectedChat?.name}</h5>
@@ -279,7 +201,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                     className="btn btn-sm btn-light"
                     onClick={() =>
                       setActiveMatch((p) =>
-                        p > 0 ? p - 1 : matchIndexes.length - 1
+                        p > 0 ? p - 1 : matchIndexes.length - 1,
                       )
                     }
                   >
@@ -325,9 +247,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
           <div
             className="chat-messages flex-grow-1 px-3"
             style={{
-              backgroundImage: `url('${
-                import.meta.env.VITE_BASE_URL
-              }assets/images/chat/chatbg-dark.png')`,
+              backgroundImage: "url(/assets/images/chat/chatbg-dark.png)",
               backgroundSize: "cover",
               backgroundRepeat: "repeat",
             }}
@@ -335,7 +255,10 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
             {displayMessages.map((item, idx) => (
               <React.Fragment key={item?._id}>
                 {(idx === 0 || dates[idx] !== dates[idx - 1]) && (
-                  <div className="chat-message bot-message text-center my-4" key={idx}>
+                  <div
+                    className="chat-message bot-message text-center my-4"
+                    key={idx}
+                  >
                     <div className="message-date d-inline-block">
                       {moment(dates[idx]).format("DD-MM-YYYY")}
                     </div>
@@ -386,7 +309,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                                 </mark>
                               ) : (
                                 <span key={i}>{part}</span>
-                              )
+                              ),
                             )
                         )}
                       </>
