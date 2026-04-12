@@ -22,7 +22,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState<any[] | undefined>([]);
-  const [fromApi, setFromApi] = useState(true);
+  const [fromApi, setFromApi] = useState(false);
   const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
   const [activeMatch, setActiveMatch] = useState(0);
   const messageRefs = React.useRef<(HTMLDivElement | null)[]>([]);
@@ -51,7 +51,9 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
 
   useEffect(() => {
     if (selectedChat?.room_id) {
-      dispatch(fetchMessages(selectedChat.room_id));
+      dispatch(fetchMessages(selectedChat?.room_id)).then((res)=>{
+        setMessages(res.payload)
+      });
     }
   }, [selectedChat]);
 
