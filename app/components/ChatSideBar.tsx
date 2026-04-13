@@ -66,7 +66,6 @@ function ChatSideBar({
   }, [searchTerm]);
 
   const handleUserClick = async (user: User) => {
-    console.log("User clicked:", user);
     try {
       const res = await dispatch(joinRoom(user._id)).unwrap();
       setSelectedChat({

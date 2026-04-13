@@ -4,6 +4,9 @@ import moment from "moment";
 import FilePreview from "./FilePreview";
 import { fetchMessages } from "../store/Messages/messagesThunks";
 import { useAppDispatch } from "../store/hooks";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
+import { socket } from "../socket";
 
 interface SelectedChatType {
   id: string | null;
@@ -28,7 +31,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   const messageRefs = React.useRef<(HTMLDivElement | null)[]>([]);
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
   const dispatch = useAppDispatch();
-
+  const { user } = useSelector((state: RootState) => state.auth);
   const dates = useMemo(() => {
     const displayMsgs = fromApi
       ? [...(messages || [])].reverse()
@@ -41,6 +44,22 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   }, [messages, fromApi]);
 
   useEffect(() => {
+    if (selectedChat?.room_id) {
+      socket.emit("join_room", selectedChat.room_id);
+    }
+  }, [selectedChat?.room_id]);
+
+  useEffect(() => {
+    socket.on("receive_message", (newMessage) => {
+      setMessages((prev: any) => [...(prev || []), newMessage]);
+    });
+
+    return () => {
+      socket.off("receive_message");
+    };
+  }, []);
+
+  useEffect(() => {
     if (showSearch) {
       requestAnimationFrame(() => {
         searchInputRef.current?.focus();
@@ -49,10 +68,12 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
     }
   }, [showSearch]);
 
+  console.log(user);
+
   useEffect(() => {
     if (selectedChat?.room_id) {
-      dispatch(fetchMessages(selectedChat?.room_id)).then((res)=>{
-        setMessages(res.payload)
+      dispatch(fetchMessages(selectedChat?.room_id)).then((res) => {
+        setMessages(res.payload);
       });
     }
   }, [selectedChat]);
@@ -271,7 +292,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                     messageRefs.current[idx] = el;
                   }}
                   className={`chat-message ${
-                    item?.sentBy === "User"
+                    item?.senderId?._id !== user?._id
                       ? "bot-message text-start"
                       : "user-message text-end"
                   }`}
@@ -290,7 +311,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                           fileUrl={item.fileUrl}
                           fileName={item.fileName}
                           onImageClick={(url) => setPreviewImage(url)}
-                          text={item?.text}
+                          text={item?.text||" "}
                         />
                       </div>
                     ) : (
@@ -321,7 +342,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                     <span className="chat-time">
                       {moment(item?.createdAt).format("hh:mm A")}
                     </span>{" "}
-                    {item?.sentBy === "Admin" && (
+                    {item?.senderId?._id === user?._id && (
                       <i
                         className={`fa-solid fa-check-double ${
                           item?.isReadByUser ? "text-success" : "chat-time"

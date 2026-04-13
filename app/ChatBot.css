@@ -668,8 +668,16 @@
 .chatbot-page .chat-message .message {
   max-width: 70%;
   word-wrap: break-word;
+  word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+}
+
+.chatbot-page .chat-message .message.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4; 
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .chatbot-page .user-message .message {

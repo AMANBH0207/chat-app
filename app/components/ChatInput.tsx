@@ -1,6 +1,9 @@
 import React, { useRef } from "react";
 import AttachmentPopup from "./AttachmentPopup";
 import { useAppDispatch } from "../store/hooks";
+import { socket } from "../socket";
+import { RootState } from "../store";
+import { useSelector } from "react-redux";
 import { sendUserMessage } from "../store/Messages/messagesThunks";
 
 interface SelectedChatType {
@@ -31,22 +34,22 @@ function ChatInput({ selectedChat }: ChatInputProps) {
   const [isOverflow, setIsOverflow] = React.useState(false);
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const audioChunksRef = React.useRef<Blob[]>([]);
+  const [audioFile, setAudioFile] = React.useState<File | null>(null);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dispatch = useAppDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   const formatTime = (sec: number) => {
     const m = String(Math.floor(sec / 60)).padStart(2, "0");
     const s = String(sec % 60).padStart(2, "0");
     return `${m}:${s}`;
   };
-  const dispatch = useAppDispatch();
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     console.log("Selected file:", file);
   };
-
   React.useEffect(() => {
     const textarea = document.querySelector("textarea");
     if (textarea) {
@@ -54,14 +57,29 @@ function ChatInput({ selectedChat }: ChatInputProps) {
       textarea.style.height = textarea.scrollHeight + "px";
     }
   }, [message]);
-
-  const sendMessage =()=>{
-    const payload = {
-      roomId: selectedChat.room_id,
-      text: message
-    }
-    dispatch(sendUserMessage(payload))
+ const sendMessage = () => {
+  if (!selectedChat?.room_id) return;
+  if (audioFile) {
+    dispatch(
+      sendUserMessage({
+        roomId: selectedChat.room_id,
+        file: audioFile,
+      })
+    );
+    setAudioFile(null);
+    setAudioURL(null);
+    audioChunksRef.current = [];
+    return;
   }
+  if (!message.trim()) return;
+
+  socket.emit("send_message", {
+    roomId: selectedChat.room_id,
+    text: message,
+    senderId: user?._id,
+  });
+  setMessage("");
+};
 
   const handleAttachmentClick = () => {
     fileInputRef.current?.click();
@@ -89,19 +107,19 @@ function ChatInput({ selectedChat }: ChatInputProps) {
     let previewURL = null;
 
     if (isImage) {
-      previewURL = URL.createObjectURL(file); // For showing image thumbnail
+      previewURL = URL.createObjectURL(file);
     }
 
     setFilePreview({
       type: isImage
         ? "image"
         : isVideo
-        ? "video"
-        : isPdf
-        ? "pdf"
-        : isZip
-        ? "zip"
-        : null,
+          ? "video"
+          : isPdf
+            ? "pdf"
+            : isZip
+              ? "zip"
+              : null,
       url: previewURL,
       name: file.name,
     });
@@ -124,8 +142,15 @@ function ChatInput({ selectedChat }: ChatInputProps) {
         const audioBlob = new Blob(audioChunksRef.current, {
           type: "audio/webm",
         });
+
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
+
+        const file = new File(audioChunksRef.current, "audio.webm", {
+          type: "audio/webm",
+        });
+
+        setAudioFile(file);
       };
 
       mediaRecorder.start();
@@ -171,7 +196,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
         return;
       } else {
         e.preventDefault();
-      
+        sendMessage();
       }
     }
   };

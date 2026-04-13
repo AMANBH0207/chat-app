@@ -41,3 +41,22 @@ export const registerUser = createAsyncThunk(
     }
   }
 );
+
+// 🔥 GET ME
+export const getMe = createAsyncThunk(
+  "auth/getMe",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/auth/me",
+        { withCredentials: true }
+      );
+
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err?.response?.data?.message || "Failed to fetch user"
+      );
+    }
+  }
+);
