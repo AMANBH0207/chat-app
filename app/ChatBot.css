@@ -1,6 +1,6 @@
 /********** RESIZABLE SIDEBAR ************/
-.logo-lg{
-  margin-right:15px;
+.logo-lg {
+  margin-right: 15px;
   border-radius: 50%;
   overflow: hidden;
   min-width: 45px;
@@ -8,16 +8,132 @@
 }
 
 .auth-bg {
-  height: 100vh;
-  background: linear-gradient(135deg, #000000, #0c252f, #000000);
+  min-height: 100vh;
+  background: radial-gradient(
+    circle at top,
+    #18d7ff 0%,
+    #08162d 35%,
+    #020611 100%
+  );
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 20px;
+}
+
+.modern-auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 35px 28px;
+  border-radius: 28px;
+  background: rgba(8, 18, 42, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  color: white;
+}
+
+.auth-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.auth-logo-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #18d7ff, #1d4fff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 34px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 30px rgba(24, 215, 255, 0.35);
+}
+
+.auth-brand {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.auth-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
+}
+
+.auth-input {
+  height: 52px;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: white !important;
+  padding: 0 16px !important;
+}
+
+.auth-btn {
+  height: 54px;
+  border-radius: 18px !important;
+  border: none !important;
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #1ce2ff, #2457ff) !important;
+}
+
+.auth-btn:hover {
+  transform: translateY(-1px);
+}
+
+.auth-logo-img {
+  object-fit: contain;
+}
+
+.auth-input-wrap {
+  position: relative;
+}
+
+.auth-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  z-index: 2;
+}
+
+.auth-icon.left {
+  left: 16px;
+}
+
+.auth-icon.right {
+  right: 16px;
+  cursor: pointer;
+}
+
+.auth-input.with-icon {
+  padding-left: 46px !important;
+}
+
+.auth-input.right-space {
+  padding-right: 46px !important;
+}
+
+.auth-input::placeholder {
+  color: rgba(255,255,255,0.75);
 }
 
 /* Glass card */
 .auth-card {
-  width: 350px;
   padding: 30px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
@@ -25,23 +141,6 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   color: white;
   animation: fadeIn 0.6s ease;
-}
-
-/* Inputs */
-.auth-input {
-  background: rgba(255, 255, 255, 0.12) !important;
-  border: none !important;
-  color: white !important;
-  transition: 0.3s;
-}
-
-.auth-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.auth-input:focus {
-  background: rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 0 0 2px #1dab61;
 }
 
 /* Button */
@@ -55,15 +154,24 @@
   transform: scale(1.03);
   box-shadow: 0 5px 15px rgba(29, 171, 97, 0.4);
 }
-
-/* Link */
 .auth-link {
-  color: #1dab61;
+  color: #47dfff;
   text-decoration: none;
+  font-weight: 600;
 }
 
 .auth-link:hover {
-  text-decoration: underline;
+  color: white;
+}
+
+.auth-bottom-text {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.forgot-text {
+  color: #47dfff;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* Animation */
@@ -77,7 +185,6 @@
     transform: translateY(0);
   }
 }
-
 
 .chat-sidebar {
   width: 400px;
@@ -327,7 +434,6 @@
   margin-bottom: 1rem;
 }
 
-
 /* NEW scrolling area */
 .chat-user-scroll {
   flex: 1;
@@ -386,12 +492,9 @@
     display: block;
   }
 
-
-
   .chat-list-container ul > li:last-child {
-  margin-bottom: 4.2rem;
-}
-
+    margin-bottom: 4.2rem;
+  }
 
   .dark-theme .chat-messages {
     padding-bottom: 70px !important;
@@ -675,7 +778,7 @@
 
 .chatbot-page .chat-message .message.clamped {
   display: -webkit-box;
-  -webkit-line-clamp: 4; 
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

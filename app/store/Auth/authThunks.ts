@@ -2,12 +2,15 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { UserLoginData } from "./authTypes";
 
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+
 export const loginUser = createAsyncThunk(
   "auth/login",
   async (data: UserLoginData, { rejectWithValue }) => {
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${BASE_URL}/api/auth/login`,
         data,
         { withCredentials: true }
       );
@@ -29,7 +32,7 @@ export const registerUser = createAsyncThunk(
   ) => {
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/register",
+         `${BASE_URL}/api/auth/register`,
         data
       );
 
@@ -48,7 +51,7 @@ export const getMe = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/auth/me",
+        `${BASE_URL}/api/auth/me`,
         { withCredentials: true }
       );
 

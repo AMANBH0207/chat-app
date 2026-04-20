@@ -1,12 +1,15 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+
 export const fetchMessages = createAsyncThunk(
   "messages/fetchMessages",
   async (roomId: string, { rejectWithValue }) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/messages/${roomId}`,
+        `${BASE_URL}/api/messages/${roomId}`,
         {
           withCredentials: true,
         },
@@ -32,7 +35,7 @@ export const sendUserMessage = createAsyncThunk(
       if (file) formData.append("file", file);
 
       const res = await axios.post(
-        "http://localhost:5000/api/messages/send",
+         `${BASE_URL}/api/messages/send`,
         formData,
         {
           withCredentials: true,
