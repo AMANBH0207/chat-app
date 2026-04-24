@@ -46,7 +46,7 @@ export default function AuthWrapper({
     runAuth();
   }, []);
 
-  if (!loading) {
+  if (loading) {
     return <AppLoader />;
   }
 
