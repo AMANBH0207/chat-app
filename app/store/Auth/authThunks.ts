@@ -45,7 +45,6 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// 🔥 GET ME
 export const getMe = createAsyncThunk(
   "auth/getMe",
   async (_, { rejectWithValue }) => {

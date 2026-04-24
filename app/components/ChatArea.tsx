@@ -68,8 +68,6 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
     }
   }, [showSearch]);
 
-  console.log(user);
-
   useEffect(() => {
     if (selectedChat?.room_id) {
       dispatch(fetchMessages(selectedChat?.room_id)).then((res) => {

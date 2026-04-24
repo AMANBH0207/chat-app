@@ -1,17 +1,13 @@
 "use client";
+
 import ChatBot from "./chat/ChatBot";
 import "./ChatBot.css";
-import { useEffect } from "react";
-import { getMe } from "./store/Auth/authThunks";
-import { useAppDispatch } from "./store/hooks";
+import AuthWrapper from "./components/Auth/AuthWrapper";
 
 export default function Home() {
-  const dispatch = useAppDispatch();
-  useEffect(() => {
-    dispatch(getMe());
-  }, []);
-
   return (
-    <ChatBot/>
+    <AuthWrapper requireAuth={true}>
+      <ChatBot />
+    </AuthWrapper>
   );
 }
