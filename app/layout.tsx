@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Conversa",
   description: "Real-time chat application",
+  manifest: "/manifest.json",
   icons: {
-    icon: "/splash_logo.png",
+    icon: "/favicon.ico",
     apple: "/splash_logo.png",
-    shortcut: "/favicon.ico",
   },
 };
 
