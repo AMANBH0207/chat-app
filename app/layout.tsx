@@ -18,6 +18,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Conversa",
   description: "Real-time chat application",
+  icons: {
+    icon: "/splash_logo.png",
+    apple: "/splash_logo.png",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
