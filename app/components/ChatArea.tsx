@@ -30,6 +30,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   const [activeMatch, setActiveMatch] = useState(0);
   const messageRefs = React.useRef<(HTMLDivElement | null)[]>([]);
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [showTyping, setShowTyping] = useState(false);
   const dispatch = useAppDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const dates = useMemo(() => {
@@ -44,20 +45,60 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   }, [messages, fromApi]);
 
   useEffect(() => {
-    if (selectedChat?.room_id) {
-      socket.emit("join_room", selectedChat.room_id);
+    if (selectedChat?.room_id && user?._id) {
+      socket.emit("join_room", {
+        roomId: selectedChat.room_id,
+        userId: user._id,
+      });
+
+      socket.emit("mark_as_read", {
+        roomId: selectedChat.room_id,
+        userId: user._id,
+      });
     }
-  }, [selectedChat?.room_id]);
+  }, [selectedChat?.room_id, user?._id]);
 
   useEffect(() => {
-    socket.on("receive_message", (newMessage) => {
-      setMessages((prev: any) => [...(prev || []), newMessage]);
-    });
+    const handleReceiveMessage = (newMessage: any) => {
+      setMessages((prev) => [...prev, newMessage]);
+      if (
+        selectedChat?.room_id === newMessage?.roomId &&
+        newMessage?.senderId?._id !== user?._id
+      ) {
+        socket.emit("mark_as_read", {
+          roomId: selectedChat.room_id,
+          userId: user?._id,
+        });
+      }
+    };
+
+    socket.on("receive_message", handleReceiveMessage);
 
     return () => {
-      socket.off("receive_message");
+      socket.off("receive_message", handleReceiveMessage);
     };
-  }, []);
+  }, [selectedChat?.room_id, user?._id]);
+
+
+  useEffect(() => {
+    const handleMessagesRead = ({ roomId }: any) => {
+      if (roomId !== selectedChat?.room_id) return;
+
+      setMessages((prev) =>
+        prev.map((msg: any) =>
+          msg?.senderId?._id === user?._id
+            ? { ...msg, isReadByUser: true }
+            : msg
+        )
+      );
+    };
+
+    socket.on("messages_read", handleMessagesRead);
+
+    return () => {
+      socket.off("messages_read", handleMessagesRead);
+    };
+  }, [selectedChat?.room_id, user?._id]);
 
   useEffect(() => {
     if (showSearch) {
@@ -82,9 +123,11 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
 
   useEffect(() => {
     if (!messageSearch.trim()) {
-      scrollToBottom();
+      requestAnimationFrame(() => {
+        scrollToBottom();
+      });
     }
-  }, [messages, messageSearch]);
+  }, [messages, showTyping, messageSearch]);
 
   const forceDownload = async (url: string, fileName = "image") => {
     const response = await fetch(url, { mode: "cors" });
@@ -114,6 +157,30 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   useEffect(() => {
     messageRefs.current = [];
   }, [displayMessages]);
+
+  useEffect(() => {
+    socket.on("user_typing", () => {
+      setShowTyping(true);
+    });
+
+    socket.on("user_stop_typing", () => {
+      setShowTyping(false);
+    });
+
+    return () => {
+      socket.off("user_typing");
+      socket.off("user_stop_typing");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedChat?.room_id && user?._id) {
+      socket.emit("mark_as_read", {
+        roomId: selectedChat.room_id,
+        userId: user._id,
+      });
+    }
+  }, [selectedChat]);
 
   return (
     <div
@@ -309,7 +376,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                           fileUrl={item.fileUrl}
                           fileName={item.fileName}
                           onImageClick={(url) => setPreviewImage(url)}
-                          text={item?.text||" "}
+                          text={item?.text || " "}
                         />
                       </div>
                     ) : (
@@ -351,6 +418,17 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
                 </div>
               </React.Fragment>
             ))}
+
+            {showTyping && (
+              <div className="chat-message bot-message text-start mt-2">
+                <div className="message bg-primary text-white d-inline-block rounded-3 p-1">
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 

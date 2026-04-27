@@ -17,9 +17,6 @@ export default function AppLoader() {
           className="logo"
         />
       </div>
-
-      {/* <p className="loading-text">Loading...</p> */}
-
       <div className="dots">
         <span></span>
         <span></span>

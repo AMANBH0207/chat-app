@@ -37,18 +37,15 @@ function ChatInput({ selectedChat }: ChatInputProps) {
   const [audioFile, setAudioFile] = React.useState<File | null>(null);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [isTyping, setIsTyping] = React.useState(false);
+  const typingTimeoutRef = useRef<any>(null);
   const dispatch = useAppDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const formatTime = (sec: number) => {
     const m = String(Math.floor(sec / 60)).padStart(2, "0");
     const s = String(sec % 60).padStart(2, "0");
     return `${m}:${s}`;
-  };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    console.log("Selected file:", file);
   };
   React.useEffect(() => {
     const textarea = document.querySelector("textarea");
@@ -57,45 +54,55 @@ function ChatInput({ selectedChat }: ChatInputProps) {
       textarea.style.height = textarea.scrollHeight + "px";
     }
   }, [message]);
- const sendMessage = () => {
-  if (!selectedChat?.room_id) return;
-  if (audioFile) {
-    dispatch(
-      sendUserMessage({
-        roomId: selectedChat.room_id,
-        file: audioFile,
-      })
-    );
-    setAudioFile(null);
-    setAudioURL(null);
-    audioChunksRef.current = [];
-    return;
-  }
-  if (!message.trim()) return;
+  const sendMessage = () => {
+    if (!selectedChat?.room_id) return;
 
-  socket.emit("send_message", {
-    roomId: selectedChat.room_id,
-    text: message,
-    senderId: user?._id,
-  });
-  setMessage("");
-};
+    if (selectedFile) {
+      dispatch(
+        sendUserMessage({
+          roomId: selectedChat.room_id,
+          file: selectedFile,
+          text: message,
+        }),
+      );
 
-  const handleAttachmentClick = () => {
-    fileInputRef.current?.click();
+      setSelectedFile(null);
+      setFilePreview({ type: null, url: null, name: null });
+      setMessage("");
+      return;
+    }
+
+    if (audioFile) {
+      dispatch(
+        sendUserMessage({
+          roomId: selectedChat.room_id,
+          file: audioFile,
+        }),
+      );
+      setAudioFile(null);
+      setAudioURL(null);
+      audioChunksRef.current = [];
+      return;
+    }
+
+    if (!message.trim()) return;
+
+    socket.emit("send_message", {
+      roomId: selectedChat.room_id,
+      text: message,
+      senderId: user?._id,
+    });
+
+    setMessage("");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
-
-    // VIDEO SIZE VALIDATION (20MB)
     if (file.type.startsWith("video") && file.size > 20 * 1024 * 1024) {
       alert("Video size cannot exceed 20MB.");
       return;
     }
-    // Identify file type
     const isImage = file.type.startsWith("image");
     const isVideo = file.type.startsWith("video");
     const isPdf = file.type === "application/pdf";
@@ -109,6 +116,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
     if (isImage) {
       previewURL = URL.createObjectURL(file);
     }
+    setSelectedFile(file);
 
     setFilePreview({
       type: isImage
@@ -200,6 +208,36 @@ function ChatInput({ selectedChat }: ChatInputProps) {
       }
     }
   };
+
+  const handleTyping = (value: string) => {
+  setMessage(value);
+
+  if (!selectedChat?.room_id) return;
+
+  if (!isTyping) {
+    setIsTyping(true);
+
+    socket.emit("typing_start", {
+      roomId: selectedChat.room_id,
+      userId: user?._id,
+    });
+  }
+
+  if (typingTimeoutRef.current) {
+    clearTimeout(typingTimeoutRef.current);
+  }
+
+  typingTimeoutRef.current = setTimeout(() => {
+    socket.emit("typing_stop", {
+      roomId: selectedChat.room_id,
+      userId: user?._id,
+    });
+
+    setIsTyping(false);
+  }, 1000);
+};
+
+  
 
   return (
     <>
@@ -296,6 +334,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
               className="btn btn-sm btn-light border-0"
               onClick={() => {
                 setFilePreview({ type: null, url: null, name: null });
+                setSelectedFile(null);
                 if (fileInputRef.current) fileInputRef.current.value = "";
               }}
             >
@@ -331,6 +370,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
                 onChange={(e) => {
                   setMessage(e.target.value);
                   setIsOverflow(e.target.scrollHeight > 120);
+                  handleTyping(e.target.value)
                 }}
                 onKeyDown={handleKeyPress}
                 rows={1}
@@ -402,7 +442,7 @@ function ChatInput({ selectedChat }: ChatInputProps) {
           if (type === "camera") {
             const input = fileInputRef.current!;
             input.accept = "image/*";
-            input.setAttribute("capture", "environment"); // mobile prefers back camera
+            input.setAttribute("capture", "environment");
             input.click();
           }
 
