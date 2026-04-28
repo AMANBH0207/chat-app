@@ -24,7 +24,7 @@ function ChatArea({ selectedChat, setSelectedChat }: ChatAreaProps) {
   const [messageSearch, setMessageSearch] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
-  const [messages, setMessages] = useState<any[] | undefined>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [fromApi, setFromApi] = useState(false);
   const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
   const [activeMatch, setActiveMatch] = useState(0);
