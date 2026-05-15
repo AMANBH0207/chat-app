@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { urlBase64ToUint8Array } from "../utils/webPush";
 
 // Replace with your actual backend URL and public key
-const BACKEND_URL = "http://localhost:5000"; 
+const BACKEND_URL =  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000"; 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY; 
 
 export default function PushNotificationManager() {
