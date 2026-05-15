@@ -19,36 +19,43 @@ export default function AuthWrapper({
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async () => {
-    try {
-      await dispatch(getMe()).unwrap();
-      if (!requireAuth) {
-        router.replace("/");
-        return;
-      }
-
-      setLoading(false);
-    } catch (error) {
-      if (requireAuth) {
-        router.replace("/login");
-        return;
-      }
-
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const runAuth = async () => {
-      await checkAuth();
+    let mounted = true;
+
+    const checkAuth = async () => {
+      try {
+        await dispatch(getMe()).unwrap();
+
+        if (!mounted) return;
+
+        if (!requireAuth) {
+          router.replace("/");
+          return;
+        }
+
+        setLoading(false);
+      } catch (error) {
+        if (!mounted) return;
+
+        if (requireAuth) {
+          router.replace("/login");
+          return;
+        }
+
+        setLoading(false);
+      }
     };
 
-    runAuth();
-  }, []);
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, [dispatch, requireAuth, router]);
 
   if (loading) {
     return <AppLoader />;
   }
 
-  return children;
+  return <>{children}</>;
 }
