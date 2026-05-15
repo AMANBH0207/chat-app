@@ -62,3 +62,25 @@ export const getMe = createAsyncThunk(
     }
   }
 );
+
+
+export const logoutUser = createAsyncThunk(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err?.response?.data?.message || "Logout failed"
+      );
+    }
+  }
+);

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import moment from "moment";
 import NavigationBar from "./NavigationBar";
 import Image from "next/image";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { searchUsers } from "../store/User/userThunks";
 import { getMyRooms, joinRoom } from "../store/Rooms/roomsThunks";
 import { User } from "../store/User/userTypes";
+import { logoutUser } from "../store/Auth/authThunks";
+import { useRouter } from "next/navigation";
 interface SelectedChatType {
   id: string | null;
   name: string | null;
@@ -32,11 +34,18 @@ function ChatSideBar({
   activeTab,
 }: ChatSideBarProps) {
   const [users, setUsers] = useState<any[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [unreadCount, setUnreadCount] = useState(0);
   const dispatch = useAppDispatch();
-
+  const { user } = useAppSelector((state) => state.auth);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const currentUser = user ?? {
+    avatarUrl: "",
+    name: "",
+    email: "",
+  };
+  const router = useRouter();
+  const { avatarUrl, name, email } = currentUser;
   let emptyIcon = "fa-comment-slash";
   let emptyText = "No Conversation Has Happened Yet";
 
@@ -67,7 +76,7 @@ function ChatSideBar({
 
   const handleUserClick = async (user: User) => {
     try {
-      const res = await dispatch(joinRoom(user._id)).unwrap();
+      await dispatch(joinRoom(user._id)).unwrap();
       setSelectedChat({
         name: user?.name,
         id: user?._id,
@@ -79,7 +88,6 @@ function ChatSideBar({
       console.error(err);
     }
   };
-
 
   useEffect(() => {
     dispatch(getMyRooms())
@@ -97,6 +105,16 @@ function ChatSideBar({
       });
   }, []);
 
+  const handleLogout = async () => {
+  try {
+    await dispatch(logoutUser()).unwrap();
+
+    router.replace("/login");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
   return (
     <div
       className={`chat-sidebar  chat-sidebar-layout border-end ${
@@ -111,13 +129,8 @@ function ChatSideBar({
         className="d-flex sideBarHeader justify-content-between align-items-center headersColor"
         style={{ padding: "25px 10px" }}
       >
-        <span className="logo-lg">
-          <Image
-            src="/assets/images/avatars/Avatar.png"
-            alt="Avatar"
-            width={45}
-            height={45}
-          />
+        <span className="logo-lg cursor-pointer">
+          <Image src={avatarUrl} alt="Avatar" width={45} height={45} />
         </span>
 
         <div className="d-flex align-items-center">
@@ -146,7 +159,7 @@ function ChatSideBar({
             />
           </div>
 
-          <span className="p-2">
+          <span className="p-2 cursor-pointer">
             <svg
               width="16"
               height="17"
@@ -169,26 +182,59 @@ function ChatSideBar({
             </svg>
           </span>
 
-          <span className="p-2">
-            {" "}
-            <svg
-              width="24"
-              height="22"
-              viewBox="0 0 24 22"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+          <div className="position-relative d-inline-block">
+            <button
+              type="button"
+              className="p-2 border-0 bg-transparent cursor-pointer"
+              onClick={() => setShowDropdown((prev) => !prev)}
             >
-              <path
-                d="M19.6555 13.0785C21.9104 13.0785 23.7368 14.8742 23.7368 17.0896C23.7368 19.3037 21.9104 21.0994 19.6555 21.0994C17.4018 21.0994 15.5741 19.3037 15.5741 17.0896C15.5741 14.8742 17.4018 13.0785 19.6555 13.0785ZM9.59359 15.379C10.5813 15.379 11.3831 16.1668 11.3831 17.1371C11.3831 18.1062 10.5813 18.8952 9.59359 18.8952H1.78948C0.801773 18.8952 0 18.1062 0 17.1371C0 16.1668 0.801773 15.379 1.78948 15.379H9.59359ZM4.0814 0C6.33638 0 8.16279 1.79567 8.16279 4.00982C8.16279 6.22526 6.33638 8.02093 4.0814 8.02093C1.82773 8.02093 0 6.22526 0 4.00982C0 1.79567 1.82773 0 4.0814 0ZM21.9487 2.25301C22.9351 2.25301 23.7368 3.04072 23.7368 4.00982C23.7368 4.98021 22.9351 5.76792 21.9487 5.76792H14.1446C13.1569 5.76792 12.3551 4.98021 12.3551 4.00982C12.3551 3.04072 13.1569 2.25301 14.1446 2.25301H21.9487Z"
-                fill="white"
-              />
-            </svg>
-          </span>
-        </div>
+              <svg
+                width="24"
+                height="22"
+                viewBox="0 0 24 22"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19.6555 13.0785C21.9104 13.0785 23.7368 14.8742 23.7368 17.0896C23.7368 19.3037 21.9104 21.0994 19.6555 21.0994C17.4018 21.0994 15.5741 19.3037 15.5741 17.0896C15.5741 14.8742 17.4018 13.0785 19.6555 13.0785ZM9.59359 15.379C10.5813 15.379 11.3831 16.1668 11.3831 17.1371C11.3831 18.1062 10.5813 18.8952 9.59359 18.8952H1.78948C0.801773 18.8952 0 18.1062 0 17.1371C0 16.1668 0.801773 15.379 1.78948 15.379H9.59359ZM4.0814 0C6.33638 0 8.16279 1.79567 8.16279 4.00982C8.16279 6.22526 6.33638 8.02093 4.0814 8.02093C1.82773 8.02093 0 6.22526 0 4.00982C0 1.79567 1.82773 0 4.0814 0ZM21.9487 2.25301C22.9351 2.25301 23.7368 3.04072 23.7368 4.00982C23.7368 4.98021 22.9351 5.76792 21.9487 5.76792H14.1446C13.1569 5.76792 12.3551 4.98021 12.3551 4.00982C12.3551 3.04072 13.1569 2.25301 14.1446 2.25301H21.9487Z"
+                  fill="white"
+                />
+              </svg>
+            </button>
 
-        {/* <span className="badge bg-secondary">
-          {users?.length} {users?.length > 1 ? "Users" : "User"}
-        </span> */}
+            {showDropdown && (
+              <div
+                className="position-absolute end-0 rounded shadow"
+                style={{
+                  top: "100%",
+                  backgroundColor: "#1E1E1E",
+                  minWidth: "140px",
+                  zIndex: 9999,
+                }}
+              >
+                <div className="d-flex align-items-center gap-2 px-3 py-2 text-white cursor-pointer" onClick={handleLogout}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+
+                  <span>Logout</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div
